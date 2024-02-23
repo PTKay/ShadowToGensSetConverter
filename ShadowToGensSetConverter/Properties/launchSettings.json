@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HeroesToGensSetConverter": {
+      "commandName": "Project",
+      "commandLineArgs": "\"E:\\#ModdingKit\\#ModFiles\\LethalHighway\\rawFiles\\set\\stg0202_nrm.ini\""
+    }
+  }
+}
