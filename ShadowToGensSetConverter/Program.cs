@@ -40,6 +40,10 @@ namespace ShadowToGensSetConverter
             string dir = Path.GetDirectoryName(setDifficultyFile);
             List<string> setFiles = GetSetFileListFromDroppedFile(setDifficultyFile);
 
+
+            string fileName = Path.GetFileName(setDifficultyFile);
+            string stgName = fileName.Substring(0, fileName.IndexOf("_"));
+
             List<SetObjectShadow> setDataHeroes = [];
             foreach (string file in setFiles)
             {
@@ -53,7 +57,7 @@ namespace ShadowToGensSetConverter
             int lastId = 1000; // Start listing objects in ID 1000 to avoid conflicts
             foreach (var heroesObject in setDataHeroes)
             {
-                List<SetObjectGens> setObjects = ShadowToGensSetObjectMapper.MapToGens(heroesObject);
+                List<SetObjectGens> setObjects = ShadowToGensSetObjectMapper.MapToGens(stgName, heroesObject);
                 if (setObjects != null)
                 {
                     foreach(SetObjectGens setObject in setObjects) {
@@ -73,6 +77,48 @@ namespace ShadowToGensSetConverter
 
             CreateOmnis(setDataHeroes, Path.Combine(dir, "lights"));
             CreateOmnis(setData, Path.Combine(dir, "lights"));
+
+            List<SetObjectGens> particles = CreateLightParticles(setDataHeroes);
+
+            convertedXml = XmlSerialiser.GenerateGensXml(particles);
+            File.WriteAllText(Path.Combine(dir, "setdata_effect.set.xml"), convertedXml);
+
+
+        }
+
+        private static List<SetObjectGens> CreateLightParticles(List<SetObjectShadow> setData)
+        {
+            List<SetObjectGens> toReturn = [];
+            int lightParticleIndex = 3000;
+            foreach (SetObjectShadow setObject in setData)
+            {
+                //if (setObject.GetType() == typeof(Decoration1))
+                if (setObject.GetType() == typeof(Destructable1))
+                {
+                    //Decoration1 obj = setObject as Decoration1;
+                    //if (obj.DecorationType == 0)
+                    Destructable1 obj = setObject as Destructable1;
+                    if (obj.DestructableType == 19)
+                    {
+                        SetParticle light = new SetParticle("ef_stg202_streetlamp");
+                        light.Position = obj.Position;
+                        light.SetObjectID = lightParticleIndex++;
+
+                        // Adjust position
+                        obj.Rotation.y += 90;
+
+                        light.Position = VectorOperations.CalculateNextPosition(obj.Position, obj.Rotation, -4.65f);
+                        light.Position.y += 11.5f;
+
+                        // Reset position
+                        obj.Rotation.y -= 90;
+
+                        toReturn.Add(light);
+                    }
+                }
+            }
+
+            return toReturn;
         }
 
         private static void CreateOmnis(List<SetObjectShadow> setData, string lightsPath)
@@ -82,10 +128,13 @@ namespace ShadowToGensSetConverter
             int lampOmniIndex = 0;
             foreach(SetObjectShadow setObject in setData)
             {
-                if (setObject.GetType() == typeof(Decoration1))
+                //if (setObject.GetType() == typeof(Decoration1))
+                if (setObject.GetType() == typeof(Destructable1))
                 {
-                    Decoration1 obj = setObject as Decoration1;
-                    if (obj.DecorationType == 0)
+                    //Decoration1 obj = setObject as Decoration1;
+                    //if (obj.DecorationType == 0)
+                    Destructable1 obj = setObject as Destructable1;
+                    if (obj.DestructableType == 19)
                     {
                         SonicLightXml light = new SonicLightXml
                         {
@@ -99,6 +148,9 @@ namespace ShadowToGensSetConverter
 
                         light.Position = VectorOperations.CalculateNextPosition(obj.Position, obj.Rotation, -5);
                         light.Position.y += 10.5f;
+
+                        // Reset rotation
+                        obj.Rotation.y -= 90;
 
                         SaveLight(light, Path.Combine(lightsPath, $"Converted_StreetLampLight{lampOmniIndex++}.light"));
                     }

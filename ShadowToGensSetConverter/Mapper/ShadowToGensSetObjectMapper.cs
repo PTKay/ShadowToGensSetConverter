@@ -1,4 +1,5 @@
 ﻿using ShadowToGensSetConverter.Helpers;
+using ShadowToGensSetConverter.Mapper.StageMappers;
 using ShadowToGensSetConverter.SetObjects;
 using ShadowToGensSetConverter.SetObjects.Common;
 using ShadowToGensSetConverter.SetObjects.Gens;
@@ -65,6 +66,7 @@ namespace ShadowToGensSetConverter.Mapper
                 return gensDashPanel;
             } },
             { "0009_Wood-Box", (shadowSet) => new ObjectPhysics("cte_obj_woodboxA") },
+            { "000A_Metal-Box", (shadowSet) => new ObjectPhysics("IronBox") },
             { "000B_Unbreakable-Box", (shadowSet) => new ObjectPhysics("IronBox") },
             { "000C_Weapon-Box", (shadowSet) => new ObjectPhysics("cte_obj_woodboxA") },
             { "0010_Rings", (shadowSet) => {
@@ -91,6 +93,7 @@ namespace ShadowToGensSetConverter.Mapper
 
                 return ring;
             } },
+            { "001B_Roadblock", (shadowSet) => new ObjectPhysics("csc_obj_barricadeB")},
             { "0022_Red-Fruit", (shadowSet) => {
                 shadowSet.Position.y += 10f;
                 return new Bomb();
@@ -107,108 +110,36 @@ namespace ShadowToGensSetConverter.Mapper
 
                 return taker;
             } },
-            { "2588_Decoration1", (shadowSet) => {
-                Decoration1 decoration = shadowSet as Decoration1;
-                switch(decoration.DecorationType)
-                {
-                    case 0:
-                        shadowSet.Rotation.y += 180; // Rotate Y
-                        shadowSet.Position.y -= 50f;
-                        return new ObjectPhysics("cte_obj_signal")
-                        {
-                            IsCastShadow = false
-                        };
-                }
-
-                return null;
-            } },
-            { "2589_Destructable1", (shadowSet) => {
-                Destructable1 destructable = shadowSet as Destructable1;
-                switch(destructable.DestructableType)
-                {
-                    case 0: return new ObjectPhysics("csc_obj_barricadeA");
-                    case 1:
-                        shadowSet.Position.y += 6f;
-                        return new ObjectPhysics("Bpc_obj_redcar").WithParticle(new SetParticle("ef_st_csc_yh1_bg_fire_a1") { EffecScale = 0.65f });
-                    case 2:
-                        shadowSet.Position.y += 7f;
-                        return new ObjectPhysics("Bpc_obj_taxi").WithParticle(new SetParticle("ef_st_csc_yh1_bg_fire_a1") { EffecScale = 0.65f });
-                    case 7: return new ObjectPhysics("csc_obj_roadconeB");
-                    case 13:
-                        shadowSet.Position.y -= 5f;
-
-                        if (Math.Round(shadowSet.Rotation.x) == 45 && Math.Round(shadowSet.Rotation.y) == 45 && Math.Round(shadowSet.Rotation.z)== -30) {
-                            shadowSet.Rotation = new Rotation()
-                            {
-                                x = -20,
-                                y = -24,
-                                z = -48
-                            };
-                        }
-                        else if (Math.Round(shadowSet.Rotation.x) == -45 && Math.Round(shadowSet.Rotation.y) == -135 && Math.Round(shadowSet.Rotation.z) == -30) {
-                            shadowSet.Rotation = new Rotation()
-                            {
-                                x = 20,
-                                y = -66,
-                                z = -48
-                            };
-                        } else
-                        {                        
-                            shadowSet.Rotation.y -= 90; // Rotate Y
-                            var a = shadowSet.Rotation.x;
-                            shadowSet.Rotation.x = shadowSet.Rotation.z;
-                            shadowSet.Rotation.z = -a;
-                        }
-
-                        return new ObjectPhysics("sph_obj_roketglassB");
-                    case 19: return new ObjectPhysics("sph_obj_drumA");
-                    case 20:
-                        shadowSet.Position.y += 12f;
-                        shadowSet.Rotation.y += 180; // Rotate Y
-                        shadowSet.Rotation.z *= -1;
-                        return new ObjectPhysics("sph_obj_guardrailA");
-                }
-
-                return null;
-            } },
-            { "258A_Effect1", (shadowSet) => {
-                Effect1 effect = shadowSet as Effect1;
-                SetParticle toReturn = null;
-
-                switch(effect.EfectType)
-                {
-                    case 30: toReturn = new SetParticle("ef_st_csc_yh1_bg_fire_a1"); break;
-                    case 91: toReturn = new SetParticle("ef_st_csc_yh1_bg_fire_a2"); break;
-                    case 92: toReturn = new SetParticle("ef_st_csc_yh1_bg_fire_b1"); break;
-                    case 94: toReturn = new SetParticle("ef_st_csc_yh1_bg_smoke_a1"); break;
-                }
-
-                if (toReturn != null)
-                {
-                    toReturn.EffectScaleX = effect.ScaleX;
-                    toReturn.EffectScaleY = effect.ScaleY;
-                    toReturn.EffectScaleZ = effect.ScaleZ;
-                    toReturn.EffecScale = 1;
-                }
-
-                return toReturn;
-            } },
             { "0014_Goal-Ring", (shadowSet) => {
                 return new GoalRing();
             } }
         };
 
-        public static List<SetObjectGens> MapToGens(SetObjectShadow setObject)
+        public static List<SetObjectGens> MapToGens(string stageName, SetObjectShadow setObject)
         {
-
-            Func<SetObjectShadow, SetObjectGens> setObjectGensGetter = MappingDictionary.GetValueOrDefault(setObject.Name);
-
-            if (setObjectGensGetter == null)
+            SetObjectGens setObjectGens = null;
+            
+            switch(setObject.Name)
             {
-                return null;
+                case "2589_Destructable1":
+                    // If it's a destructable, we use the stage specific mapper
+                    setObjectGens = StageMapper.GetSpecificStageMapper(stageName)?.MapDestructableToGens(setObject as Destructable1);
+                    break;
+                case "258A_Effect1":
+                    // If it's an effect, we use the stage specific mapper
+                    setObjectGens = StageMapper.GetSpecificStageMapper(stageName)?.MapEffectToGens(setObject as Effect1);
+                    break;
+                case "2588_Decoration1":
+                    // If it's a decoration, we use the stage specific mapper
+                    setObjectGens = StageMapper.GetSpecificStageMapper(stageName)?.MapDecorationToGens(setObject as Decoration1);
+                    break;
+                default:
+                    Func<SetObjectShadow, SetObjectGens> setObjectGensGetter = MappingDictionary.GetValueOrDefault(setObject.Name);
+                    setObjectGens = setObjectGensGetter?.Invoke(setObject);
+                    break;
             }
 
-            SetObjectGens setObjectGens = setObjectGensGetter.Invoke(setObject);
+
             if (setObjectGens == null)
             {
                 return null;
