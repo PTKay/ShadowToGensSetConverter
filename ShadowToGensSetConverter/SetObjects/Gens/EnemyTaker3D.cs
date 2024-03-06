@@ -27,7 +27,7 @@ namespace ShadowToGensSetConverter.SetObjects.Gens
         public bool IsThrowDown = false;
         public bool IsTurnToPlayer = true;
         public float MoveSpeed = 5;
-        public float MoveType = 2;
+        public float MoveType = 0;
         public float PathIsAccel = 1;
         public float PathIsAccelMove = 0;
         public float PathIsBezier = 1;

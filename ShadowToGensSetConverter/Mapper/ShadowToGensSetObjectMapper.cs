@@ -110,6 +110,13 @@ namespace ShadowToGensSetConverter.Mapper
 
                 return taker;
             } },
+            { "008F_Black-Arms-Wing", (shadowSet) => {
+                EnemyTaker3D taker = new EnemyTaker3D();
+
+                taker.PositionListMove.Add(shadowSet.Position);
+
+                return taker;
+            } },
             { "0014_Goal-Ring", (shadowSet) => {
                 return new GoalRing();
             } }
